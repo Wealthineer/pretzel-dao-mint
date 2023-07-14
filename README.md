@@ -1,4 +1,4 @@
-This is a boilerplate [Next.js](https://nextjs.org/) project with [Wagmi.sh](https://wagmis.sh) and [Tailwind](https://tailwindcss.com/). 
+This is a boilerplate [Next.js](https://nextjs.org/) project with [Wagmi.sh](https://wagmi.sh) and [Tailwind](https://tailwindcss.com/). 
 
 ## Getting Started
 
