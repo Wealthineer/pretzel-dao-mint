@@ -1,6 +1,9 @@
+"use client"
 import './globals.css'
+import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Wagmi from './config/wagmiConfig'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,7 +19,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className="font-jura bg-[#0A1128] text-white">
+        <Wagmi>
+          <div>{children}</div>
+        </Wagmi>
+      </body>
     </html>
   )
 }
