@@ -1,8 +1,7 @@
 "use client"
-import { getDefaultProvider } from 'ethers';
+
 import { WagmiConfig, createConfig, configureChains } from 'wagmi'
-import { createPublicClient, http } from 'viem'
-import { mainnet, sepolia, goerli, polygonMumbai, polygon } from 'wagmi/chains'
+import { mainnet, sepolia, polygonMumbai, polygon } from 'wagmi/chains'
 import { infuraProvider } from 'wagmi/providers/infura';
 import { publicProvider } from 'wagmi/providers/public';
 import { connectorsForWallets, getDefaultWallets } from '@rainbow-me/rainbowkit';
@@ -11,7 +10,7 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 console.log(process.env.INFURA_KEY)
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-    [sepolia, polygonMumbai, mainnet],
+    [sepolia, polygonMumbai, mainnet, polygon],
 
     [
         infuraProvider({
