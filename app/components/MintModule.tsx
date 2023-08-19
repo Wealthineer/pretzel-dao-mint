@@ -120,7 +120,7 @@ function MintModule() {
         </div>
         <div>
             <button onClick={buttonClicked} className={`flex items-center justify-center bg-[#318DFF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out`}> 
-                Test
+                Mint
             </button>
         </div>
 
