@@ -28,7 +28,7 @@ console.log(process.env.WALLET_CONNECT_API)
 
 
 const { wallets } = getDefaultWallets({
-    appName: "Youtube Demo",
+    appName: "Pretzel Dao Membership Mint",
     projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_API != undefined ? process.env.NEXT_PUBLIC_WALLET_CONNECT_API : "NO KEY",
     chains,
 });
