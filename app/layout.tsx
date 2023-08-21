@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-jura bg-[#0A1128] text-white">
+      <body className="font-jura bg-[#0E1234] text-white">
         <Wagmi>
           <div>{children}</div>
         </Wagmi>
