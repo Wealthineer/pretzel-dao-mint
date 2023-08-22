@@ -11,8 +11,8 @@ const Navbar = () => (
    initial="hidden"
    whileInView="show"
    className={`${styles.xPaddings} py-8 relative`}>
-    <div className='absolute w-[50%] inset-0 gradient-01'/>
-    <div className={`${styles.innerWidth} mx-auto flex justify-between gap-8`}>
+    <div className='absolute w-[100%] inset-0 gradient-navbar z-0'/>
+    <div className={`${styles.innerWidth} mx-auto flex justify-between gap-8 z-50`}>
       <div  className='pl-5'>
         <img src="/logo_pretzel_dao.svg"
         alt="logo"

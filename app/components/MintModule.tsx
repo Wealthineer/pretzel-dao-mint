@@ -141,18 +141,18 @@ function MintModule() {
 
     return (
         <>
-        <div className="flex justify-center ">
-        {isClient && !isConnected && <div className="flex"><ConnectWallet /></div>}
+        <div>
+            {isClient && !isConnected && <div className="flex"><ConnectWallet /></div>}
 
-        {isClient && isBalanceOk && isConnected && !enoughAllowance && <div className="flex"><button onClick={setAllowance} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out`}> 
-               Give Mint Contract Allowance of 50 USDC
-            </button></div>}
+            {isClient && isBalanceOk && isConnected && !enoughAllowance && <div className="flex"><button onClick={setAllowance} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out`}> 
+                Give Mint Contract Allowance of 50 USDC
+                </button></div>}
 
-        {isClient && isBalanceOk && isConnected && enoughAllowance && <button onClick={mint} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out min-w-[150px]`}> 
-                Mint
-            </button>} 
+            {isClient && isBalanceOk && isConnected && enoughAllowance && <button onClick={mint} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out min-w-[150px]`}> 
+                    Mint
+                </button>} 
         </div>
-        <div className="flex justify-center">
+        <div>
             {isClient && isConnected && !enoughAllowance && isBalanceOk && <p>You need to set an allowance of 50 USDC for minting the membership card using the button above</p>}
             {isClient && isConnected && !isBalanceOk && <p>You already own a membership card</p>}
             {isClient && isConnected && !isBalanceOk && mintSuccess && <p>Congrats on minting your Pretzel DAO membership card</p>}

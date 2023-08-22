@@ -1,29 +1,6 @@
-enum TransitionDirection {
-  left = 'left',
-  right = 'right',
-  up = 'up',
-  down = 'down',
-}
-
-enum TransitionType {
-  spring = 'spring',
-  tween = 'tween',
-  inertia = 'inertia',
-}
-
-enum TransitionEase {
-  easeIn = 'easeIn',
-  easeOut = 'easeOut',
-  easeInOut = 'easeInOut',
-  linear = 'linear',
-  circIn = 'circIn',
-  circOut = 'circOut',
-  circInOut = 'circInOut',
-  backIn = 'backIn',
-  backOut = 'backOut',
-  backInOut = 'backInOut',
-  anticipate = 'anticipate',
-}
+type TransitionDirection = 'left' | 'right' | 'up' | 'down';
+type TransitionType = 'spring' | 'tween' | 'inertia';
+type TransitionEase = 'easeIn' | 'easeOut' | 'easeInOut' | 'linear' | 'circIn' | 'circOut' | 'circInOut' | 'backIn' | 'backOut' | 'backInOut' | 'anticipate';
 
 export const navVariants = {
   hidden: {
@@ -41,7 +18,7 @@ export const navVariants = {
     transition: {
       type: 'spring',
       stiffness: 80,
-      delay: 1,
+      delay: .5,
     },
   },
 };
@@ -83,7 +60,7 @@ export const textContainer = {
   },
   show: (i = 1) => ({
     opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: i * 0.1 },
+    transition: { staggerChildren: 0.05, delayChildren: i * 0.05 },
   }),
 };
 

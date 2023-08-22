@@ -10,3 +10,53 @@
   font-style: normal;
   font-display: swap;
 }
+
+.gradient-navbar {
+  background-image: linear-gradient(
+    270deg,
+    #0077FF 20%,
+    #00E0AC 40%,
+    #FF1654 90%
+  );
+  filter: blur(125px);
+  z-index: -1;
+}
+
+.gradient-01 {
+  position: absolute;
+  width: 200px;
+  height: 438px;
+  top: 35%;
+  left: 35%;
+
+  background: #0077FF;
+  filter: blur(190px);
+  transform: rotate(-130deg);
+  z-index: -1;
+}
+
+.gradient-02 {
+  position: absolute;
+  width: 200px;
+  height: 438px;
+  top: 35%;
+  left: 70%;
+
+  background: #00E0AC;
+  filter: blur(190px);
+  transform: rotate(-10deg);
+  z-index: -1;
+}
+
+.gradient-03 {
+  position: absolute;
+  width: 200px;
+  height: 600px;
+  top: 35%;
+  left: 10%;
+
+  background: #FF1654;
+  filter: blur(130px);
+  transform: rotate(70deg);
+  z-index: -1;
+}
