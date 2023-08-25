@@ -1,9 +1,10 @@
 "use client"
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction } from "wagmi"
 import {usdcMockSolABI, erc721MembershipMintSolABI} from "@/src/generated"
 import { readContract, writeContract } from "@wagmi/core"
 import ConnectWallet from "./ConnectWallet";
+import DeployingModal from "./Modal"
 
 
 function MintModule() {
@@ -14,6 +15,7 @@ function MintModule() {
     const [isBalanceOk, setIsBalanceOk] = useState(true);
     const [isWhitelisted, setIsWhitelisted] = useState(true);
     const [mintSuccess, setMintSuccess] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         setIsCLient(true)
@@ -42,19 +44,20 @@ function MintModule() {
     const mintPrice: bigint  = process.env.NEXT_PUBLIC_MINT_PRICE ? BigInt(process.env.NEXT_PUBLIC_MINT_PRICE): BigInt(0)
 
 
-    async function getAvailableAllowance() {
+
+
+    //Methods reading from smart contracts that are required to determine in which state of the mint the user currently is and what needs to be done
+
+    async function checkAllowance() {
         if(!isConnected) return BigInt(0)
-        const data = await readContract({
+
+        const allowance = await readContract({
             abi: usdcMockSolABI,
             address: paymentTokenContractAddress,
             functionName: 'allowance',
             args: [connectedWallet, mintContractAddress]
         })
-        return data
-    }
 
-    async function checkAllowance() {
-        const allowance = await getAvailableAllowance()
         const enoughAllowance = allowance >= mintPrice
         setEnoughAllowance(enoughAllowance)
         return (enoughAllowance) 
@@ -83,81 +86,170 @@ function MintModule() {
         return isBalanceOk
     }
 
+
+    //Set up the transaction to give the required allowance for the mint
+
     const {config: allowanceConfig} = usePrepareContractWrite({
                 address: paymentTokenContractAddress,
                 abi: usdcMockSolABI,
                 functionName: 'approve',
                 args:[mintContractAddress, mintPrice]
     })
-    const allowanceWrite = useContractWrite(allowanceConfig)
+    const {write: allowanceWrite, data: allowanceData} = useContractWrite(allowanceConfig)
 
-    const {} = useWaitForTransaction({
-        hash: allowanceWrite.data?.hash,
-        onSuccess(data) {
-            console.log(data)
-            checkAllowance()
-            console.log("Allowance success, update enoughAllowance")
-        }
+    const {isSuccess: allowanceIsSucces, isError: allowanceIsError, isLoading: allowanceIsLoading, error: allowanceError} = useWaitForTransaction({
+        hash: allowanceData?.hash,
 
     })
 
-    async function setAllowance() {
-        const enoughAllowance = await checkAllowance()
-        if(!enoughAllowance) {
-            //@ts-ignore
-            allowanceWrite?.write()
-        }
 
-    }
+    //Set up the mint transaction
 
-    const {config: mintConfig} = usePrepareContractWrite({
+    const {config: mintConfig, refetch: mintPrepareRefetch} = usePrepareContractWrite({
             address: mintContractAddress,
             abi: erc721MembershipMintSolABI,
             functionName: 'mint',
+            enabled: false, //since the balance might not be set, this fails most likely on first try
         })
-    const mintWrite = useContractWrite(mintConfig)
+    const {write: mintWrite, data: mintData, reset: mintReset, isError: mintWriteIsError, error: mintWriteError} = useContractWrite(mintConfig)
 
-    const {} = useWaitForTransaction({
-        hash: mintWrite.data?.hash,
-        onSuccess(data) {
-            console.log(data)
-            setMintSuccess(true)
-            checkBalance()
-            console.log("Mint success, update balance")
-        }
+    const {isSuccess: mintIsSuccess, isError: mintIsError, error: mintError, isLoading: mintIsLoading} = useWaitForTransaction({
+        hash: mintData?.hash,
 
     })
 
-    async function mint() {
-        const enoughAllowance = await checkAllowance()
-        const isWhitelisted = await checkWhitelist()
-        const isBalanceOk = await checkBalance()
-        if (isWhitelisted && isBalanceOk && enoughAllowance) {
-                   //@ts-ignore
-        mintWrite?.write()
+
+    //functions called by the buttons
+
+    async function setAllowance() {
+        await checkAllowance()
+        if(!enoughAllowance) {
+            allowanceWrite?.()
         }
 
     }
 
+    async function mint() {
+        await checkAllowance()
+        await checkWhitelist()
+        await checkBalance()
+        if (isWhitelisted && isBalanceOk && enoughAllowance) {
+            mintWrite?.()
+        }
+
+    }
+
+
+
+    //Reacting to the change of state variables
+    useEffect(() => {
+        if(enoughAllowance) {
+            //you can do the mint prepare only once the allowance is set  - otherwise it will fail
+            //if the allowance is already set on loading you would not populate the fetch when doing this
+            //call only in the allowanceIsSuccess check
+            mintPrepareRefetch()
+        }
+    }, [enoughAllowance])
+
+
+
+    //Handle successful transcation
+
+    useEffect(() => {
+        if(allowanceIsSucces) {
+            console.log("Allowance success, update enoughAllowance")
+            checkAllowance() //update the enoughAllowance state variable to take the successful transaction into account
+            
+        }
+    }, [allowanceIsSucces])
+
+
+    useEffect(() => {
+        if(mintIsSuccess) {
+            setMintSuccess(true) //setting state to give a different message to the user than when visiting the page with already minted membership card
+            checkBalance() //update the isBalanceOk state variable to take the successful transaction into account
+            console.log("Mint success, update balance")
+        }
+    }, [mintIsSuccess])
+
+
+
+
+    //Handle errors in various stages
+
+    useEffect(() => {
+        if(allowanceIsError) {
+            //handle here what needs to be done if the allowance transaction fails
+            console.log("Allowance error")
+            console.log(allowanceError)
+        }
+    }, [allowanceIsError])
+
+    useEffect(() => {
+        if(mintIsError) {
+            //handle here what needs to be done if the mint transaction fails
+            console.log("Mint Error")
+            console.log(mintError)
+        }
+    }, [mintIsError])
+
+    useEffect(() => {
+        if(mintWriteError) {
+            //handle here what needs to be done if the user e.g. decides to reject the transaction
+            console.log("mint write error")
+            console.log(mintWriteError)
+        }
+    }, [mintWriteError])
+
+
+    //Handle loading effects
+
+    useEffect(() => {
+        if(allowanceIsLoading) {
+            console.log("Allowance is now starting transaction")
+            setIsOpen(true)
+            
+        }
+        if(!allowanceIsLoading) {
+            console.log("Allowance has ended transaction")
+            setIsOpen(false)
+        }
+    }, [allowanceIsLoading])
+
+    useEffect(() => {
+        if(mintIsLoading) {
+            console.log("Mint is now starting transaction")
+            setIsOpen(true)
+        }
+        if(!mintIsLoading) {
+            console.log("Mint has ended transaction")
+            setIsOpen(false)
+        }
+    }, [mintIsLoading])
+
     return (
         <>
+        < DeployingModal isOpen={isOpen} />
         <div>
+        <div className="flex items-center justify-center">
             {isClient && !isConnected && <div className="flex"><ConnectWallet /></div>}
 
-            {isClient && isBalanceOk && isConnected && !enoughAllowance && <div className="flex"><button onClick={setAllowance} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out`}> 
+            {isClient && isBalanceOk && isConnected && !enoughAllowance && <div className="flex"><button onClick={setAllowance} disabled={!allowanceWrite} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out`}> 
                 Give Mint Contract Allowance of 50 USDC
                 </button></div>}
 
-            {isClient && isBalanceOk && isConnected && enoughAllowance && <button onClick={mint} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out min-w-[150px]`}> 
+            {isClient && isBalanceOk && isConnected && enoughAllowance && <button onClick={mint} disabled={!mintWrite} className={`flex items-center justify-center bg-[#0077FF] text-white whitespace-nowrap py-[12px] px-[13px] rounded-md text-center text-base cursor-pointer  transition:ease-in-out min-w-[150px]`}> 
                     Mint
                 </button>} 
         </div>
-        <div>
+        <div className="flex items-center justify-center mt-5">
             {isClient && isConnected && !enoughAllowance && isBalanceOk && <p>You need to set an allowance of 50 USDC for minting the membership card using the button above</p>}
-            {isClient && isConnected && !isBalanceOk && <p>You already own a membership card</p>}
+            {isClient && isConnected && !isBalanceOk && !mintSuccess&&  <p>You already own a membership card</p>}
             {isClient && isConnected && !isBalanceOk && mintSuccess && <p>Congrats on minting your Pretzel DAO membership card</p>}
             {isClient && isConnected && !isWhitelisted && <p>You need to be whitelisted by the Pretzel DAO leadership team to mint</p>}
         </div>
+        </div>
+        
         </>
 
 
