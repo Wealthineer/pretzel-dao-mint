@@ -1,16 +1,27 @@
 "use client"
 
 import { WagmiConfig, createConfig, configureChains } from 'wagmi'
-import { mainnet, sepolia, polygonMumbai, polygon } from 'wagmi/chains'
+import { Chain, mainnet, sepolia, polygonMumbai, polygon } from 'wagmi/chains'
 import { infuraProvider } from 'wagmi/providers/infura';
 import { publicProvider } from 'wagmi/providers/public';
 import { connectorsForWallets, getDefaultWallets } from '@rainbow-me/rainbowkit';
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 
-console.log(process.env.INFURA_KEY)
+const activeChain = process.env.NEXT_PUBLIC_ACTIVE_CHAIN
+
+let chain: Chain[] = []
+if(activeChain == "mainnet") {
+    chain = [mainnet]
+} else if(activeChain == "sepolia") {
+    chain = [sepolia]
+} else if(activeChain == "polygon") {
+    chain = [polygon]
+} else if(activeChain == "polygonMumbai") {
+    chain = [polygonMumbai]
+}
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-    [sepolia, polygonMumbai, mainnet, polygon],
+    chain,
 
     [
         infuraProvider({

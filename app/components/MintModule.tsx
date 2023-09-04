@@ -4,7 +4,9 @@ import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransa
 import {usdcMockSolABI, erc721MembershipMintSolABI} from "@/src/generated"
 import { readContract, writeContract } from "@wagmi/core"
 import ConnectWallet from "./ConnectWallet";
-import DeployingModal from "./Modal"
+import DeployingModal from "./TransactionModal"
+import NotificationPopup from "./NotificationPopup"
+import TransactionModal from "./TransactionModal"
 
 
 function MintModule() {
@@ -15,7 +17,11 @@ function MintModule() {
     const [isBalanceOk, setIsBalanceOk] = useState(true);
     const [isWhitelisted, setIsWhitelisted] = useState(true);
     const [mintSuccess, setMintSuccess] = useState(false);
-    const [isOpen, setIsOpen] = useState(false);
+    const [mintSuccessNotifyIsOpen, setMintSuccessNotifyIsOpen] = useState(false);
+    const [allowanceSuccessNotifyIsOpen, setAllowanceSuccessNotifyIsOpen] = useState(false);
+    const [errorNotifyIsOpen, setErrorNotifyIsOpen] = useState(false);
+    const [mintModalIsOpen, setMintModalIsOpen] = useState(false);
+    const [allowanceModalIsOpen, setAllowanceModalIsOpen] = useState(false);
 
     useEffect(() => {
         setIsCLient(true)
@@ -95,7 +101,7 @@ function MintModule() {
                 functionName: 'approve',
                 args:[mintContractAddress, mintPrice]
     })
-    const {write: allowanceWrite, data: allowanceData} = useContractWrite(allowanceConfig)
+    const {write: allowanceWrite, data: allowanceData, error: allowanceWriteError, isError: allowanceWriteIsError} = useContractWrite(allowanceConfig)
 
     const {isSuccess: allowanceIsSucces, isError: allowanceIsError, isLoading: allowanceIsLoading, error: allowanceError} = useWaitForTransaction({
         hash: allowanceData?.hash,
@@ -159,6 +165,7 @@ function MintModule() {
         if(allowanceIsSucces) {
             console.log("Allowance success, update enoughAllowance")
             checkAllowance() //update the enoughAllowance state variable to take the successful transaction into account
+            setAllowanceSuccessNotifyIsOpen(true) //show the user a notification that the allowance was successful
             
         }
     }, [allowanceIsSucces])
@@ -166,9 +173,11 @@ function MintModule() {
 
     useEffect(() => {
         if(mintIsSuccess) {
-            setMintSuccess(true) //setting state to give a different message to the user than when visiting the page with already minted membership card
-            checkBalance() //update the isBalanceOk state variable to take the successful transaction into account
             console.log("Mint success, update balance")
+            setMintSuccess(true) //setting state to give a different message to the user than when visiting the page with already minted membership card
+            setMintSuccessNotifyIsOpen(true) //show the user a notification that the mint was successful
+            checkBalance() //update the isBalanceOk state variable to take the successful transaction into account
+            
         }
     }, [mintIsSuccess])
 
@@ -180,14 +189,26 @@ function MintModule() {
     useEffect(() => {
         if(allowanceIsError) {
             //handle here what needs to be done if the allowance transaction fails
+            setErrorNotifyIsOpen(true)
             console.log("Allowance error")
             console.log(allowanceError)
         }
     }, [allowanceIsError])
 
+
+    useEffect(() => {
+        if(allowanceWriteIsError) {
+            //handle here what needs to be done if the allowance transaction fails
+            setErrorNotifyIsOpen(true)
+            console.log("Allowance Write error")
+            console.log(allowanceWriteError)
+        }
+    }, [allowanceWriteIsError])
+
     useEffect(() => {
         if(mintIsError) {
             //handle here what needs to be done if the mint transaction fails
+            setErrorNotifyIsOpen(true)
             console.log("Mint Error")
             console.log(mintError)
         }
@@ -196,6 +217,7 @@ function MintModule() {
     useEffect(() => {
         if(mintWriteError) {
             //handle here what needs to be done if the user e.g. decides to reject the transaction
+            setErrorNotifyIsOpen(true)
             console.log("mint write error")
             console.log(mintWriteError)
         }
@@ -207,29 +229,28 @@ function MintModule() {
     useEffect(() => {
         if(allowanceIsLoading) {
             console.log("Allowance is now starting transaction")
-            setIsOpen(true)
+            setAllowanceModalIsOpen(true)
             
         }
         if(!allowanceIsLoading) {
             console.log("Allowance has ended transaction")
-            setIsOpen(false)
+            setAllowanceModalIsOpen(false)
         }
     }, [allowanceIsLoading])
 
     useEffect(() => {
         if(mintIsLoading) {
             console.log("Mint is now starting transaction")
-            setIsOpen(true)
+            setMintModalIsOpen(true)
         }
         if(!mintIsLoading) {
             console.log("Mint has ended transaction")
-            setIsOpen(false)
+            setMintModalIsOpen(false)
         }
     }, [mintIsLoading])
 
     return (
         <>
-        < DeployingModal isOpen={isOpen} />
         <div>
         <div className="flex items-center justify-center">
             {isClient && !isConnected && <div className="flex"><ConnectWallet /></div>}
@@ -249,7 +270,11 @@ function MintModule() {
             {isClient && isConnected && !isWhitelisted && <p>You need to be whitelisted by the Pretzel DAO leadership team to mint</p>}
         </div>
         </div>
-        
+        <NotificationPopup success={true} isActive={mintSuccessNotifyIsOpen} setActive={setMintSuccessNotifyIsOpen} title="Minting Successful" description="You have successfully minted your Pretzel DAO membership card" />
+        <NotificationPopup success={true} isActive={allowanceSuccessNotifyIsOpen} setActive={setAllowanceSuccessNotifyIsOpen} title="Allowance Successful" description="You have successfully given the mint contract an allowance of 50 USDC" />
+        <NotificationPopup success={false} isActive={errorNotifyIsOpen} setActive={setErrorNotifyIsOpen} title="Error" description="An error occured. Please try again." />
+        <TransactionModal open={mintModalIsOpen} setOpen={setMintModalIsOpen} title="Minting Membership Card" description="You are currently minting your Pretzel DAO membership card..." txHash={mintData?.hash} />
+        <TransactionModal open={allowanceModalIsOpen} setOpen={setAllowanceModalIsOpen} title="Processing Allowance" description="Transcation for giving the mint contract an allowance of 50 USDC is processing..." txHash={allowanceData?.hash} />
         </>
 
 
