@@ -1,10 +1,9 @@
 "use client"
-import { use, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useContractEvent } from "wagmi"
 import {usdcMockSolABI, erc721MembershipMintSolABI} from "@/src/generated"
-import { readContract, writeContract } from "@wagmi/core"
+import { readContract } from "@wagmi/core"
 import ConnectWallet from "./ConnectWallet";
-import DeployingModal from "./TransactionModal"
 import NotificationPopup from "./NotificationPopup"
 import TransactionModal from "./TransactionModal"
 
@@ -15,7 +14,7 @@ function MintModule() {
     const [enoughAllowance, setEnoughAllowance] = useState(false);
     const [isClient, setIsCLient] = useState(false);
     const [isBalanceOk, setIsBalanceOk] = useState(true);
-    const [isWhitelisted, setIsWhitelisted] = useState(true);
+    const [isAllowlisted, setIsAllowlisted] = useState(true);
     const [mintSuccess, setMintSuccess] = useState(false);
     const [mintSuccessNotifyIsOpen, setMintSuccessNotifyIsOpen] = useState(false);
     const [allowanceSuccessNotifyIsOpen, setAllowanceSuccessNotifyIsOpen] = useState(false);
@@ -31,7 +30,7 @@ function MintModule() {
     useEffect(() => {
         if (isConnected) {
             checkAllowance()
-            checkWhitelist()
+            checkAllowlist()
             checkBalance()
         } else {
             setEnoughAllowance(false)
@@ -71,11 +70,11 @@ function MintModule() {
         return (enoughAllowance) 
     }
 
-    async function checkWhitelist() {
+    async function checkAllowlist() {
         const data = await readContract({
             abi: erc721MembershipMintSolABI,
             address: mintContractAddress,
-            functionName: 'whitelistWithId',
+            functionName: 'allowlistWithId',
             args: [connectedWallet]
         })
         return data > BigInt(0)
@@ -153,9 +152,9 @@ function MintModule() {
     async function mint() {
         setAllowanceSuccessNotifyIsOpen(false) //close the notification that the allowance was successful so the mint notification will be visible
         await checkAllowance()
-        await checkWhitelist()
+        await checkAllowlist()
         await checkBalance()
-        if (isWhitelisted && isBalanceOk && enoughAllowance) {
+        if (isAllowlisted && isBalanceOk && enoughAllowance) {
 
             mintWrite?.()
         }
@@ -271,7 +270,7 @@ function MintModule() {
             {isClient && isConnected && !isBalanceOk && !mintSuccess&&  <p>You already own a membership card</p>}
             {isClient && isConnected && !isBalanceOk && mintSuccess && <><p>Congrats on minting your Pretzel DAO membership card</p></> }
             {isClient && isConnected && !isBalanceOk && mintSuccess && mintedNftId>0 && <a className="text-gray-400" href={openSeaBaseUrl + mintContractAddress +"/" + mintedNftId} target="_blank"> (Your NFT on OpenSea)</a>}
-            {isClient && isConnected && !isWhitelisted && <p>You need to be whitelisted by the Pretzel DAO leadership team to mint</p>}
+            {isClient && isConnected && !isAllowlisted && <p>You need to be allowlisted by the Pretzel DAO leadership team to mint</p>}
         </div>
         </div>
         <NotificationPopup success={true} isActive={mintSuccessNotifyIsOpen} setActive={setMintSuccessNotifyIsOpen} title="Minting Successful" description="You have successfully minted your Pretzel DAO membership card" />
