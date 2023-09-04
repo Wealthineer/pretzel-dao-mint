@@ -31,12 +31,7 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
     ],
 )
 
-
-
 export const rainbowChains = chains;
-
-console.log(process.env.WALLET_CONNECT_API)
-
 
 const { wallets } = getDefaultWallets({
     appName: "Pretzel Dao Membership Mint",

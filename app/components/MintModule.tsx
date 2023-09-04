@@ -1,6 +1,6 @@
 "use client"
 import { use, useEffect, useState } from "react"
-import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction } from "wagmi"
+import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useContractEvent } from "wagmi"
 import {usdcMockSolABI, erc721MembershipMintSolABI} from "@/src/generated"
 import { readContract, writeContract } from "@wagmi/core"
 import ConnectWallet from "./ConnectWallet";
@@ -22,6 +22,7 @@ function MintModule() {
     const [errorNotifyIsOpen, setErrorNotifyIsOpen] = useState(false);
     const [mintModalIsOpen, setMintModalIsOpen] = useState(false);
     const [allowanceModalIsOpen, setAllowanceModalIsOpen] = useState(false);
+    const [mintedNftId, setMintedNftId] = useState(0);
 
     useEffect(() => {
         setIsCLient(true)
@@ -48,6 +49,7 @@ function MintModule() {
     const connectedWallet: PrefixedHexString  = address ? address as PrefixedHexString : "0x0"; 
 
     const mintPrice: bigint  = process.env.NEXT_PUBLIC_MINT_PRICE ? BigInt(process.env.NEXT_PUBLIC_MINT_PRICE): BigInt(0)
+    const openSeaBaseUrl = process.env.NEXT_PUBLIC_OPEN_SEA_BASE_URL
 
 
 
@@ -124,6 +126,19 @@ function MintModule() {
 
     })
 
+    const unwatch =  useContractEvent({
+        address: mintContractAddress,
+        abi: erc721MembershipMintSolABI,
+        eventName: 'Transfer',
+        listener: (event) => {
+            if(event[0].topics[2].toLowerCase().includes(address ? address.toLowerCase().substring(2) : "address not set")) {
+                setMintedNftId(parseInt(event[0].topics[3], 16))
+                unwatch?.()
+            }
+            
+        }
+    })
+
 
     //functions called by the buttons
 
@@ -136,10 +151,12 @@ function MintModule() {
     }
 
     async function mint() {
+        setAllowanceSuccessNotifyIsOpen(false) //close the notification that the allowance was successful so the mint notification will be visible
         await checkAllowance()
         await checkWhitelist()
         await checkBalance()
         if (isWhitelisted && isBalanceOk && enoughAllowance) {
+
             mintWrite?.()
         }
 
@@ -163,7 +180,6 @@ function MintModule() {
 
     useEffect(() => {
         if(allowanceIsSucces) {
-            console.log("Allowance success, update enoughAllowance")
             checkAllowance() //update the enoughAllowance state variable to take the successful transaction into account
             setAllowanceSuccessNotifyIsOpen(true) //show the user a notification that the allowance was successful
             
@@ -173,7 +189,6 @@ function MintModule() {
 
     useEffect(() => {
         if(mintIsSuccess) {
-            console.log("Mint success, update balance")
             setMintSuccess(true) //setting state to give a different message to the user than when visiting the page with already minted membership card
             setMintSuccessNotifyIsOpen(true) //show the user a notification that the mint was successful
             checkBalance() //update the isBalanceOk state variable to take the successful transaction into account
@@ -190,8 +205,6 @@ function MintModule() {
         if(allowanceIsError) {
             //handle here what needs to be done if the allowance transaction fails
             setErrorNotifyIsOpen(true)
-            console.log("Allowance error")
-            console.log(allowanceError)
         }
     }, [allowanceIsError])
 
@@ -200,8 +213,6 @@ function MintModule() {
         if(allowanceWriteIsError) {
             //handle here what needs to be done if the allowance transaction fails
             setErrorNotifyIsOpen(true)
-            console.log("Allowance Write error")
-            console.log(allowanceWriteError)
         }
     }, [allowanceWriteIsError])
 
@@ -209,8 +220,6 @@ function MintModule() {
         if(mintIsError) {
             //handle here what needs to be done if the mint transaction fails
             setErrorNotifyIsOpen(true)
-            console.log("Mint Error")
-            console.log(mintError)
         }
     }, [mintIsError])
 
@@ -218,8 +227,6 @@ function MintModule() {
         if(mintWriteError) {
             //handle here what needs to be done if the user e.g. decides to reject the transaction
             setErrorNotifyIsOpen(true)
-            console.log("mint write error")
-            console.log(mintWriteError)
         }
     }, [mintWriteError])
 
@@ -228,23 +235,19 @@ function MintModule() {
 
     useEffect(() => {
         if(allowanceIsLoading) {
-            console.log("Allowance is now starting transaction")
             setAllowanceModalIsOpen(true)
             
         }
         if(!allowanceIsLoading) {
-            console.log("Allowance has ended transaction")
             setAllowanceModalIsOpen(false)
         }
     }, [allowanceIsLoading])
 
     useEffect(() => {
         if(mintIsLoading) {
-            console.log("Mint is now starting transaction")
             setMintModalIsOpen(true)
         }
         if(!mintIsLoading) {
-            console.log("Mint has ended transaction")
             setMintModalIsOpen(false)
         }
     }, [mintIsLoading])
@@ -266,7 +269,8 @@ function MintModule() {
         <div className="flex items-center justify-center mt-5">
             {isClient && isConnected && !enoughAllowance && isBalanceOk && <p>You need to set an allowance of 50 USDC for minting the membership card using the button above</p>}
             {isClient && isConnected && !isBalanceOk && !mintSuccess&&  <p>You already own a membership card</p>}
-            {isClient && isConnected && !isBalanceOk && mintSuccess && <p>Congrats on minting your Pretzel DAO membership card</p>}
+            {isClient && isConnected && !isBalanceOk && mintSuccess && <><p>Congrats on minting your Pretzel DAO membership card</p></> }
+            {isClient && isConnected && !isBalanceOk && mintSuccess && mintedNftId>0 && <a className="text-gray-400" href={openSeaBaseUrl + mintContractAddress +"/" + mintedNftId} target="_blank"> (Your NFT on OpenSea)</a>}
             {isClient && isConnected && !isWhitelisted && <p>You need to be whitelisted by the Pretzel DAO leadership team to mint</p>}
         </div>
         </div>
